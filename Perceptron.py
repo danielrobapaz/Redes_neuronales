@@ -23,5 +23,26 @@ class Perceptron():
         if self.algorithm == 'Perceptron':
             self.__perceptron()
 
-    def __perceptron(sefl):
+        elif self.algorithm == 'Averaged':
+            self.__average()
+        
+        elif self.algorithm == 'MIRA':
+            self.__MIRA()
+        
+        else:
+            raise Exception('Unexpected algorithm')
+        
+        self.__test_model(self)
+
+
+    def __perceptron(self):
+        return None
+    
+    def __average(self):
+        return None
+    
+    def __MIRA(self):
+        return None
+    
+    def __test_model(self):
         return None
