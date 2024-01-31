@@ -3,36 +3,37 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 class Perceptron():
-    def __init__(self, data: pd.DataFrame,
+    def __init__(self, 
+                 train_data: pd.DataFrame,
+                 test_data: pd.DataFrame,
                  algorithm: str,
-                 max_iter: int = 100,
                  learning_rate: float = 1) -> None:
         
-        self.data = data
+        self.train_data = train_data
+        self.test_data = test_data
         self.algorithm = algorithm
-        self.max_iter = max_iter
         self.learning_rate = learning_rate
         self.error_per_epoch = []
-        self.weights = np.random.random(len(data.columns))
+        self.weights = np.random.random(len(train_data.columns))
 
         self.__train_model()
     
     def __train_model(self):
-        train, test = train_test_split(self.data, train_size=0.8, test_size=0.2)
-
         if self.algorithm == 'Perceptron':
-            self.__perceptron(train)
+            self.__perceptron(self.train_data)
 
         elif self.algorithm == 'Averaged':
-            self.__averaged(train)
+            self.__averaged(self.train_data)
         
         elif self.algorithm == 'MIRA':
-            self.__MIRA(train)
+            self.__MIRA(self.train_data)
         
+        elif self.algorithm == 'LMS':
+            self.__LMS(self.train_data)
         else:
             raise Exception('Unexpected algorithm')
         
-        self.__test_model(test)
+        self.__test_model(self.test_data)
 
 
     def __perceptron(self, data: pd.DataFrame):
@@ -118,7 +119,32 @@ class Perceptron():
             current_epoch += 1
 
         print(f'convergence reached in {current_epoch} epochs')
-    
+
+    def __LMS(self, data:pd.DataFrame):
+        current_epoch, max_epoch = 0, 5000
+        threshold = 1
+
+        while current_epoch < max_epoch:
+            current_error = 0
+            for _, row in data.iterrows():
+                x = row[data.columns[0: -1]]
+                x['b'] = 1
+                d = int(row[data.columns[-1]])
+
+                y = np.dot(x, self.weights)
+
+                self.weights = self.weights + self.learning_rate*(d - y)*x
+
+                current_error += (d - y)**2
+
+            current_epoch += 1
+
+            if current_error / 2 <= threshold:
+                break
+
+        print(f'convergence reached in {current_epoch} epochs')
+
+
     def __test_model(self, data: pd.DataFrame): 
         bad_classification_counter = 0
 
@@ -134,3 +160,9 @@ class Perceptron():
                 bad_classification_counter += 1
 
         print(f'Number of bad classified examples {bad_classification_counter}')
+
+
+n = 100
+df = pd.read_csv(f'datasets/{n}_3d_coords.csv')
+train, test = train_test_split(df, train_size=0.8, test_size=0.2)
+p = Perceptron(train, test, 'LMS', 0.7)

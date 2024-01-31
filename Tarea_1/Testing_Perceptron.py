@@ -2,24 +2,31 @@ import pandas as pd
 from Perceptron import Perceptron
 import matplotlib.pyplot as plt 
 import numpy as np 
+from sklearn.model_selection import train_test_split
 
 class Testing_Perceptron:
     def __init__(self, n: int, learning_rate: float = 1):
         df = pd.read_csv(f'datasets/{n}_3d_coords.csv')
 
+        train, test = train_test_split(df, train_size=0.8, test_size=0.2)
+
+
         print(f'Testing with {n} examples')
         print(f'...:::Perceptron:::...')
-        perceptron = Perceptron(data = df,
+        perceptron = Perceptron(train_data=train,
+                                test_data=test,
                                 algorithm = 'Perceptron',
                                 learning_rate = learning_rate)
         
         print('\n\n...:::Averaged Perceptron:::...')
-        averaged_perceptron = Perceptron(data = df,
+        averaged_perceptron = Perceptron(train_data=train,
+                                         test_data=test,
                                          algorithm = 'Averaged',
                                          learning_rate = learning_rate)
         
         print('\n\n...:::MIRA Perceptron:::...')
-        mira_perceptron = Perceptron(data = df,
+        mira_perceptron = Perceptron(train_data=train,
+                                     test_data=test,
                                      algorithm = 'MIRA',
                                      learning_rate = learning_rate)
         
@@ -42,3 +49,5 @@ class Testing_Perceptron:
         fig.set_figwidth(12)
 
         plt.show()
+
+tp = Testing_Perceptron(10000, 0.7)
