@@ -27,4 +27,4 @@ class Testing_Adaline:
 
         plt.show()
 
-tp = Testing_Adaline(1000, 0.1)
+tp = Testing_Adaline(100, 0.1)
