@@ -42,8 +42,7 @@ class LMS():
         print(f'convergence reached in {current_epoch} epochs')
 
 
-    def __test_model(self, data: pd.DataFrame): 
-        bad_classification_counter = 0
+    def __test_model(self, data: pd.DataFrame):
         error = 0
         for _, row in data.iterrows():
             x = row[data.columns[0: -1]]
