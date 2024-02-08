@@ -1,14 +1,16 @@
 import pandas as pd
 import numpy as np
-from math import exp, log2, floor
-from itertools import combinations_with_replacement
+from math import exp
+from sklearn.model_selection import train_test_split
 
 class Neuron:
     def __init__(self, 
                  number_of_weights: int):
         self.weigths = np.random.random(number_of_weights + 1)
+        self.input = None
 
     def activate(self, input_data: pd.DataFrame) -> float:
+        self.input = np.array(input_data)
         stimulus = np.dot(input_data, self.weigths)
         return self.__sigmoid(stimulus), stimulus
     
@@ -22,7 +24,11 @@ class Neuron:
 class Neural_Network:
     def __init__(self,
                  data: pd.DataFrame,
-                 layers: [int] = []):
+                 layers: [int] = [1],
+                 learning_rate: float = 0.01):
+        
+        if not layers[-1] == 1:
+            raise Exception('Unexpected number of neurons in output layer')
         
         variables = len(data.columns)-1
         self.layers = []
@@ -35,8 +41,10 @@ class Neural_Network:
 
         self.answer_map = [[1, 0], [0, 1]]
 
-        self.__train(data)
-        self.__test()
+        self.learning_rate = learning_rate
+        train, test = train_test_split(data, train_size=0.8, test_size=0.2)
+        self.__train(train)
+        self.__test(test)
 
     def __feed_fordward(self, x: pd.DataFrame):
         activation = []
@@ -77,7 +85,7 @@ class Neural_Network:
                 derivate = self.layers[i][j].activate_derivate(stimulus[i][j])
                 if i == len(self.layers)-1:
                     # output layer
-                    neuron_gradient = -error[j]*derivate*activation[i][j]
+                    neuron_gradient = -error*derivate*activation[i][j]
 
                 else:
                     # hidden layer
@@ -90,25 +98,45 @@ class Neural_Network:
 
         return gradient
 
-    def __train(self, 
-                data: pd.DataFrame):
-        for _, row in data.iterrows():
-            x = row[data.columns[:-1]]
-            x['b'] = 1
-            d = int(row[data.columns[-1]])
-            
-            activation, stimulus = self.__feed_fordward(x)
+    def __update_neurons(self, gradient: [np.array]):
+        for i in range(len(self.layers)):
+            for j in range(len(self.layers[i])):
+                y = self.layers[i][j].input
+                self.layers[i][j].weigths = self.layers[i][j].weigths + self.learning_rate*gradient[i][j]*y
 
-            output = activation[-1]
-            expected_output = self.answer_map[d]
-            error = output - expected_output
+    def __train(self, data: pd.DataFrame):
+        current_epoch = 0
+        bad_clasified_examples_per_epoch = []
+        while True:
+            current_epoch += 1
+            bad_clasified_examples = 0
+            for _, row in data.iterrows():
+                x = row[data.columns[:-1]]
+                x['b'] = 1
+                d = int(row[data.columns[-1]])
+                
+                activation, stimulus = self.__feed_fordward(x)
 
-            gradient = self.__calculate_gradient(error, 
-                                                 stimulus,
-                                                 activation)
-            
-            
-            
+                raw_output = activation[-1]
+                output = 1 if raw_output >= 0.5 else -1
+                error = d-output
 
-    def __test(self,):
+                if output == d:
+                    bad_clasified_examples += 1 
+                gradient = self.__calculate_gradient(error, 
+                                                    stimulus,
+                                                    activation)
+                self.__update_neurons(gradient)
+
+            bad_clasified_examples_per_epoch.append(bad_clasified_examples)
+
+            percentage_error = bad_clasified_examples/len(data)
+            if percentage_error <= 0.01 or current_epoch >= 1000:
+                print(f'Convergence reached in {current_epoch} epochs with {percentage_error}')
+                print(bad_clasified_examples_per_epoch[980:])
+                break
+
+            print(current_epoch)
+
+    def __test(self, data: pd.DataFrame):
         return None
