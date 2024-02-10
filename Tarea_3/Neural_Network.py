@@ -10,100 +10,78 @@ class Neuron:
         self.input = None
 
     def activate(self, input_data: pd.DataFrame) -> float:
-        self.input = np.array(input_data)
         stimulus = np.dot(input_data, self.weigths)
-        return self.__sigmoid(stimulus), stimulus
+        return self.__sigmoid(stimulus)
     
     def __sigmoid(self, value: float) -> float:
         return 1/(1+exp(-value))
-    
-    def activate_derivate(self, value: float) -> float:
-        return self.__sigmoid(value)*(1-self.__sigmoid(value))
 
 
 class Neural_Network:
     def __init__(self,
                  data: pd.DataFrame,
-                 layers: [int] = [1],
+                 number_of_neurons_hidden_layers: int = 0,
                  learning_rate: float = 0.01):
         
-        if not layers[-1] == 1:
-            raise Exception('Unexpected number of neurons in output layer')
-        
         variables = len(data.columns)-1
-        self.layers = []
-        for i, number_of_neurons in enumerate(layers):
-            if i == 0:
-                self.layers.append([Neuron(variables) for _ in range(number_of_neurons)])
-
-            else:
-                self.layers.append([Neuron(layers[i-1]) for _ in range(number_of_neurons)])
-
-        self.answer_map = [[1, 0], [0, 1]]
+        
+        self.layers = [[Neuron(variables) for _ in range(number_of_neurons_hidden_layers)]]
+        self.layers.append([Neuron(number_of_neurons_hidden_layers)])
 
         self.learning_rate = learning_rate
+
         train, test = train_test_split(data, train_size=0.8, test_size=0.2)
         self.__train(train)
         self.__test(test)
 
     def __feed_fordward(self, x: pd.DataFrame):
-        activation = []
-        stimulus = []
-        for i in range(len(self.layers)):
-            current_activation = []
-            current_stimulus = []
+        activation_hidden_layer = np.array([])
+        
+        for i in range(len(self.layers[0])):
+            activation = self.layers[0][i].activate(x)
+            activation_hidden_layer = np.append(activation_hidden_layer, activation)
+        
+        activation_hidden_layer = np.append(activation_hidden_layer, 1)
 
-            for j in range(len(self.layers[i])):
-                #j_th neuron of the i_th layer
-                if i == 0:
-                    # input layer
-                    act, stim = self.layers[i][j].activate(x) 
-                else:
-                    # hidden layers
-                    act, stim = self.layers[i][j].activate(activation[i-1])
-                
-                current_activation .append(act)
-                current_stimulus.append(stim)
-
-            if i != len(self.layers)-1:
-                current_activation += [1]
-
-            activation.append(np.array(current_activation))
-            stimulus.append(np.array(current_stimulus))
-
-        return activation, stimulus
+        activation_output_layer = self.layers[1][0].activate(activation_hidden_layer)
+        
+        return [activation_hidden_layer, activation_output_layer]
     
     def __calculate_gradient(self, 
-                             error: np.array,
-                             stimulus: np.array,
-                             activation: np.array) -> np.array:
-        gradient = []
-        for i in range(len(self.layers)-1, -1, -1):
-            current_gradient = []
-            for j in range(len(self.layers[i])):
-                #j_th neuron of the i_th layer
-                derivate = self.layers[i][j].activate_derivate(stimulus[i][j])
-                if i == len(self.layers)-1:
-                    # output layer
-                    neuron_gradient = -error*derivate*activation[i][j]
+                             error: float,
+                             output: float,
+                             hidden_activation: np.array) -> np.array:
+        
+        gradient_output = (output)*(1-output)*error
+        gradient_hidden_layer = []
 
-                else:
-                    # hidden layer
-                    next_layer_weights = np.array([n.weigths[j] for n in self.layers[i+1]])
-                    neuron_gradient = derivate*np.dot(next_layer_weights, gradient[0])
-                    
-                current_gradient.append(neuron_gradient)
-            
-            gradient.insert(0, np.array(current_gradient))
+        output_layer = self.layers[1][0]
+        
+        for i in range(len(self.layers[0])):
+            gradient = hidden_activation[i]*(1-hidden_activation[i])*output_layer.weigths[i]
+            gradient_hidden_layer.append(gradient)
 
-        return gradient
+        return gradient_hidden_layer, gradient_output
 
-    def __update_neurons(self, gradient: [np.array]):
-        for i in range(len(self.layers)):
-            for j in range(len(self.layers[i])):
-                y = self.layers[i][j].input
-                self.layers[i][j].weigths = self.layers[i][j].weigths + self.learning_rate*gradient[i][j]*y
+    def __update_neurons(self,
+                         input: [float],
+                         gradient_hidden_layer: [float],
+                         activation_hidden_layer: [float],
+                         gradient_output_layer: float):
+        
+        # update output layer
+        for i in range(len(self.layers[1][0].weigths)):
+            delta_w = self.learning_rate*gradient_output_layer*activation_hidden_layer[i]
+            self.layers[1][0].weigths[i] += delta_w
 
+        # update hidden layers
+        for i in range(len(self.layers[0])):
+            for j in range(len(self.layers[0][i].weigths)):
+                # j_th weight of the i_th neuron in the hidden layer
+                delta_w = self.learning_rate*gradient_hidden_layer[i]*input[j]
+                self.layers[0][i].weigths[j] += delta_w 
+
+        
     def __train(self, data: pd.DataFrame):
         current_epoch = 0
         bad_clasified_examples_per_epoch = []
@@ -115,18 +93,25 @@ class Neural_Network:
                 x['b'] = 1
                 d = int(row[data.columns[-1]])
                 
-                activation, stimulus = self.__feed_fordward(x)
+                feed_fordward = self.__feed_fordward(x)
+                
+                activation_hidden_layer = feed_fordward[0]
 
-                raw_output = activation[-1]
-                output = 1 if raw_output >= 0.5 else -1
+                activation_output_layer = feed_fordward[1]
+
+                output = 1 if activation_output_layer >= 0.5 else -1
                 error = d-output
 
-                if output == d:
-                    bad_clasified_examples += 1 
-                gradient = self.__calculate_gradient(error, 
-                                                    stimulus,
-                                                    activation)
-                self.__update_neurons(gradient)
+                if output != d:
+                    bad_clasified_examples += 1
+                 
+                gradient_hidden_layer, gradient_output = self.__calculate_gradient(error,
+                                                                                   activation_output_layer,
+                                                                                   activation_hidden_layer)
+                self.__update_neurons(x,
+                                      gradient_hidden_layer,
+                                      activation_hidden_layer,
+                                      gradient_output)
 
             bad_clasified_examples_per_epoch.append(bad_clasified_examples)
 
