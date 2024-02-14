@@ -109,7 +109,7 @@ class Neural_Network:
 
                 activation_output_layer = feed_fordward[1]
 
-                output = 1 if activation_output_layer >= 0.5 else -1
+                output = 1 if activation_output_layer >= 0.5 else 0
                 error = d-output
 
                 if output != d:
@@ -127,7 +127,7 @@ class Neural_Network:
 
             bad_clasified_examples_per_epoch.append(percentage_error)
 
-            if current_epoch >= self.max_epoch:
+            if current_epoch >= self.max_epoch or percentage_error <= 0.0:
                 y_count = data['y'].value_counts()
                 print('::Training::')
                 print(f'Examples distribution in training \n {y_count}')
@@ -148,7 +148,7 @@ class Neural_Network:
             x['b'] = 1
             d = int(row[data.columns[-1]])
 
-            network_output = 1 if self.__feed_fordward(x)[1] >= 0.5 else -1
+            network_output = 1 if self.__feed_fordward(x)[1] >= 0.5 else 0
 
             if d != network_output:
                 bad_clasified_examples += 1
@@ -157,7 +157,7 @@ class Neural_Network:
         
         print('\n::Testing::')
         print(f'Examples distribution in training \n {y_count}')
-        print(f'Number of well clasified examples: {bad_clasified_examples} ({round(bad_clasified_examples_percentage, 2)} %)')
+        print(f'Number of bad clasified examples: {bad_clasified_examples} ({round(bad_clasified_examples_percentage, 2)} %)')
 
     def __plot_data(self, data: pd.DataFrame):
         network_y = np.array([])
@@ -165,7 +165,7 @@ class Neural_Network:
             x = row[data.columns[:-1]]
             x['b'] = 1
 
-            network_output = 1 if self.__feed_fordward(x)[1] >= 0.5 else -1
+            network_output = 1 if self.__feed_fordward(x)[1] >= 0.5 else 0
 
             network_y = np.append(network_y, int(network_output))
 
@@ -194,4 +194,4 @@ class Neural_Network:
 
 
     def get_output(self, x: pd.DataFrame) -> int:
-        return 1 if self.__feed_fordward(x)[1] >= 0.5 else -1
+        return 1 if self.__feed_fordward(x)[1] >= 0.5 else 0

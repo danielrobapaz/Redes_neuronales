@@ -119,7 +119,7 @@ class Boosting:
         
         fig, ax = plt.subplots(ncols=2)
         sns.scatterplot(data, x='x1', y='x2', hue='y', ax=ax[0])
-        sns.scatterplot(data, x='x1', y='x2', hue='network_y', ax=ax[1])
+        sns.scatterplot(data, x='x1', y='x2', hue='committee_y', ax=ax[1])
         
         ax[0].set_title('Grafico de dispersion del conjunto de datos')
         ax[1].set_title('Grafico de dispersion resultante del comite')
