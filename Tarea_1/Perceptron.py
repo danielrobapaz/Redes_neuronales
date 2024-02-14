@@ -120,31 +120,6 @@ class Perceptron():
 
         print(f'convergence reached in {current_epoch} epochs')
 
-    def __LMS(self, data:pd.DataFrame):
-        current_epoch, max_epoch = 0, 5000
-        threshold = 1
-
-        while current_epoch < max_epoch:
-            current_error = 0
-            for _, row in data.iterrows():
-                x = row[data.columns[0: -1]]
-                x['b'] = 1
-                d = int(row[data.columns[-1]])
-
-                y = np.dot(x, self.weights)
-
-                self.weights = self.weights + self.learning_rate*(d - y)*x
-
-                current_error += (d - y)**2
-
-            current_epoch += 1
-
-            if current_error / 2 <= threshold:
-                break
-
-        print(f'convergence reached in {current_epoch} epochs')
-
-
     def __test_model(self, data: pd.DataFrame): 
         bad_classification_counter = 0
 
@@ -162,7 +137,7 @@ class Perceptron():
         print(f'Number of bad classified examples {bad_classification_counter}')
 
 
-n = 100
-df = pd.read_csv(f'datasets/{n}_3d_coords.csv')
+n = 10000
+df = pd.read_csv(f'datasets/{n}_3d_coords_lms.csv')
 train, test = train_test_split(df, train_size=0.8, test_size=0.2)
-p = Perceptron(train, test, 'LMS', 0.7)
+p = Perceptron(train, test, 'LMS', 0.01)
