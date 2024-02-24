@@ -1,4 +1,4 @@
-from Neural_Network import Neural_Network
+from Neural_Network_2 import Neural_Network
 import pandas as pd
 from random import random
 import numpy as np
@@ -6,12 +6,14 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 class Boosting:
-    def __init__(self, 
+    def __init__(self,
                  data: pd.DataFrame,
-                 number_of_neurons_hidden_layers: [int],
+                 number_of_neurons_hidden_layers: list[int],
                  learning_rate: float = 0.01,
                  momentum: float = 0.0,
                  max_epoch: int = 100):
+        
+        
         N = len(data)
         n1, n2, n3 = N//4, N//3, N//3
 
@@ -53,11 +55,10 @@ class Boosting:
 
             for i, row in data.iterrows():
                 x = row[data.columns[:-1]]
-                x['b'] = 1
 
                 y = row[data.columns[-1]]
                 
-                network_output = self.e1.get_output(x)
+                network_output = self.e1.predict(x)
 
                 if is_head and y != network_output:
                     is_head = random() >= 0.5
@@ -80,10 +81,9 @@ class Boosting:
 
         for i, row in data.iterrows():
             x = row[data.columns[:-1]]
-            x['b'] = 1
                 
-            network1_output = self.e1.get_output(x)
-            network2_output = self.e2.get_output(x)
+            network1_output = self.e1.predict(x)
+            network2_output = self.e2.predict(x)
 
             if network1_output != network2_output:
                 example_counter += 1
@@ -94,10 +94,10 @@ class Boosting:
             
         return data.iloc[n3_examples_index]
     
-    def get_output(self, x: pd.DataFrame) -> int:
-        output_1 = self.e1.get_output(x)
-        output_2 = self.e2.get_output(x)
-        output_3 = self.e3.get_output(x)
+    def predict(self, x: pd.DataFrame) -> int:
+        output_1 = self.e1.predict(x)
+        output_2 = self.e2.predict(x)
+        output_3 = self.e3.predict(x)
 
         if output_1 == output_2:
             return output_2
@@ -109,9 +109,8 @@ class Boosting:
         committee_y = np.array([])
         for _, row in data.iterrows():
             x = row[data.columns[:-1]]
-            x['b'] = 1
 
-            committee_output = self.get_output(x)
+            committee_output = self.predict(x)
 
             committee_y = np.append(committee_y, committee_output)
 
