@@ -1,4 +1,4 @@
-from Neural_Network_2 import Neural_Network
+from Neural_Network import Neural_Network
 import pandas as pd
 from random import random
 import numpy as np
